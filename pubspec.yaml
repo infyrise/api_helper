@@ -1,20 +1,30 @@
 name: api_helper
 description: Api Helper based on Dio
 version: 1.0.5
-repository: https://github.com/iemektar/api_helper
+homepage: https://github.com/infyrise
+repository: https://github.com/infyrise/youtube_details
+issue_tracker: https://github.com/infyrise/youtube_details/issues
+publish_to: 'none'
 
 environment:
-  sdk: '>=2.18.5 <3.0.0'
-  flutter: ">=3.3.9"
+  sdk: ">=2.18.5 <3.0.0"
 
 dependencies:
-  flutter:
-    sdk: flutter
+  dio: ^5.9.0
   custom_response: ^1.0.3
-  dio: ^4.0.0
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
+  test: ^1.28.0
+  mockito: ^5.5.0
+  build_runner: ^2.4.0
 
-flutter:
+topics:
+  - api
+  - dio
+  - http
+  - network
+  - dart
+
+screenshots:
+  - description: "Simple API requests with Dio and typed responses"
+    path: assets/screenshots/api_helper_example.png
