@@ -1,17 +1,20 @@
-name: api_caller
-description: A lightweight helper for making HTTP API calls using Dart.
-version: 1.0.6
-
-repository: https://github.com/infyrise
-homepage: https://github.com/infyrise/api_helper
-issue_tracker: https://github.com/infyrise/api_helper/issues
+name: api_helper
+description: Api Helper based on Dio
+version: 1.0.5
+repository: https://github.com/iemektar/api_helper
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: '>=2.18.5 <3.0.0'
+  flutter: ">=3.3.9"
 
 dependencies:
-  http: ^1.4.0
+  flutter:
+    sdk: flutter
+  custom_response: ^1.0.3
+  dio: ^4.0.0
 
 dev_dependencies:
-  lints: ^3.0.0
-  test: ^1.24.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
