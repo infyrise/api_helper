@@ -6,5 +6,4 @@ enum ApiHelperRequestType {
   delete,
   patch,
   head,
-  options,
 }

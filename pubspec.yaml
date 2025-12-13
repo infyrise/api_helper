@@ -1,13 +1,16 @@
 name: api_helper
-description: Api Helper based on Dio
-version: 1.0.5
+description: A flexible API helper built on Dio with support for
+  singleton usage, dynamic base URL override, per-request bearer token,
+  JSON & FormData requests, and typed responses.
+
+version: 2.0.0
+
 homepage: https://github.com/infyrise
-repository: https://github.com/infyrise/youtube_details
-issue_tracker: https://github.com/infyrise/youtube_details/issues
-publish_to: 'none'
+repository: https://github.com/infyrise/api_helper
+issue_tracker: https://github.com/infyrise/api_helper/issues
 
 environment:
-  sdk: ">=2.18.5 <3.0.0"
+  sdk: ">=2.18.5 <4.0.0"
 
 dependencies:
   dio: ^5.9.0
@@ -26,5 +29,5 @@ topics:
   - dart
 
 screenshots:
-  - description: "Simple API requests with Dio and typed responses"
+  - description: Simple API requests with Dio and typed responses
     path: assets/screenshots/api_helper_example.png
