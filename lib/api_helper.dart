@@ -95,10 +95,10 @@ class ApiHelper {
   // CORE REQUEST
   // ==========================
   Future<ResponseHelper.Response> request(
-      ApiHelperPathItem item, {
-        String? token,
-        String? contentType,
-      }) async {
+    ApiHelperPathItem item, {
+    String? token,
+    String? contentType,
+  }) async {
     try {
       final finalToken = token ?? item.tokenOverride ?? _token;
 
@@ -174,21 +174,21 @@ class ApiHelper {
   // SHORTCUT METHODS
   // ==========================
   Future<ResponseHelper.Response> get(
-      String key, {
-        Map<String, dynamic>? query,
-        String? token,
-      }) {
+    String key, {
+    Map<String, dynamic>? query,
+    String? token,
+  }) {
     final item = getPathItem(key);
     if (query != null) item.setQueryParameters(query);
     return request(item, token: token);
   }
 
   Future<ResponseHelper.Response> post(
-      String key, {
-        dynamic data,
-        String? token,
-        String? contentType,
-      }) {
+    String key, {
+    dynamic data,
+    String? token,
+    String? contentType,
+  }) {
     final item = getPathItem(key);
     if (data != null) item.setData(data);
     return request(item, token: token, contentType: contentType);
