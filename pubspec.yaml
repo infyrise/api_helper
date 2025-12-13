@@ -30,4 +30,4 @@ topics:
 
 screenshots:
   - description: Simple API requests with Dio and typed responses
-    path: assets/screenshots/api_helper_example.png
+    path: assets/api_helper_example.png
