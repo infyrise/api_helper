@@ -48,11 +48,26 @@ class ApiHelper {
   }
 
   // ==========================
-  // GLOBAL TOKEN & BASE URL
+  // TOKEN & BASE URL MANAGEMENT
   // ==========================
+  /// Get current token
+  String? get currentToken => _token;
+
+  /// Set global token
   void setToken(String? token) {
     _token = token;
     _applyToken();
+  }
+
+  /// Set global base URL
+  void setBaseUrl(String url) {
+    _baseUrl = url;
+    _dio.options.baseUrl = _baseUrl;
+  }
+
+  /// Inject custom Dio (useful for mocking)
+  void overrideDio(Dio dio) {
+    _dio = dio;
   }
 
   void _applyToken() {
@@ -61,11 +76,6 @@ class ApiHelper {
     } else {
       _dio.options.headers.remove("Authorization");
     }
-  }
-
-  void setBaseUrl(String url) {
-    _baseUrl = url;
-    _dio.options.baseUrl = _baseUrl;
   }
 
   // ==========================
@@ -77,10 +87,8 @@ class ApiHelper {
 
   ApiHelperPathItem getPathItem(String key) {
     final item = _paths[key];
-    if (item == null) {
-      throw Exception("Path not found: $key");
-    }
-    return item.clone(); // 🔥 important
+    if (item == null) throw Exception("Path not found: $key");
+    return item.clone(); // important: return a clone for overrides
   }
 
   // ==========================
@@ -92,22 +100,18 @@ class ApiHelper {
         String? contentType,
       }) async {
     try {
-      // ---------------- TOKEN PRIORITY
       final finalToken = token ?? item.tokenOverride ?? _token;
 
       final headers = <String, dynamic>{};
-
       if (finalToken != null && finalToken.isNotEmpty) {
         headers["Authorization"] = "Bearer $finalToken";
       }
-
       if (contentType != null) {
         headers["Content-Type"] = contentType;
       }
 
       final options = headers.isNotEmpty ? Options(headers: headers) : null;
 
-      // ---------------- BASE URL OVERRIDE
       final url = item.baseUrlOverride != null
           ? "${item.baseUrlOverride}${item.path}"
           : item.path;
@@ -119,33 +123,32 @@ class ApiHelper {
           response = await _dio.get(url,
               queryParameters: item.queryParameters, options: options);
           break;
-
         case ApiHelperRequestType.post:
           response = await _dio.post(url,
               data: item.data,
               queryParameters: item.queryParameters,
               options: options);
           break;
-
         case ApiHelperRequestType.put:
           response = await _dio.put(url,
               data: item.data,
               queryParameters: item.queryParameters,
               options: options);
           break;
-
         case ApiHelperRequestType.delete:
           response = await _dio.delete(url,
               data: item.data,
               queryParameters: item.queryParameters,
               options: options);
           break;
-
         case ApiHelperRequestType.patch:
           response = await _dio.patch(url,
               data: item.data,
               queryParameters: item.queryParameters,
               options: options);
+          break;
+        case ApiHelperRequestType.head:
+          // TODO: Handle this case.
           break;
       }
 
