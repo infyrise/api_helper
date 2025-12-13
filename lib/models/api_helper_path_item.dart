@@ -1,5 +1,3 @@
-
-
 import 'api_helper_request_type.dart';
 
 class ApiHelperPathItem {
