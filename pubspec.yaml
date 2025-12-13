@@ -1,4 +1,4 @@
-name: api_helper
+name: api_caller
 description: A flexible API helper built on Dio with support for
   singleton usage, dynamic base URL override, per-request bearer token,
   JSON & FormData requests, and typed responses.
