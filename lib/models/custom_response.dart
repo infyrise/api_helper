@@ -1,36 +1,38 @@
 class Response<T> {
-  late bool _isSuccess;
-  String? _errorMessage;
-  T? value;
+  final bool _isSuccess;
+  final String? _errorMessage;
+  final T? value;
 
-  Response() {
-    _isSuccess = true;
-    _errorMessage = null;
-    value = null;
-  }
+  /// Default constructor: success response with null value
+  Response()
+      : _isSuccess = true,
+        _errorMessage = null,
+        value = null;
 
-  Response.create(bool isSuccess, {String? errorMessage, T? value}) {
-    _isSuccess = isSuccess;
-    _errorMessage = errorMessage;
-    value = value;
-  }
+  /// Custom response with explicit success flag, optional error message and value
+  Response.create(this._isSuccess, {String? errorMessage, this.value})
+      : _errorMessage = errorMessage;
 
-  Response.fromResponse(Response response) {
-    if (response.isSuccess)
-      Response.success(response.value);
-    else
-      Response.error(response.errorMessage);
-  }
+  /// Create a response from another Response instance
+  Response.fromResponse(Response<T> response)
+      : _isSuccess = response.isSuccess,
+        _errorMessage = response._errorMessage,
+        value = response.value;
 
-  Response.success(this.value) {
-    _isSuccess = true;
-  }
+  /// Success response with a value
+  Response.success(this.value)
+      : _isSuccess = true,
+        _errorMessage = null;
 
-  Response.error(this._errorMessage) {
-    _isSuccess = false;
-    value = null;
-  }
+  /// Error response with message
+  Response.error(String errorMessage)
+      : _isSuccess = false,
+        _errorMessage = errorMessage,
+        value = null;
 
+  /// Whether the response is successful
   bool get isSuccess => _isSuccess;
+
+  /// Returns the error message, or empty string if none
   String get errorMessage => _errorMessage ?? "";
 }

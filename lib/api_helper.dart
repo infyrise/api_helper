@@ -2,7 +2,8 @@ import 'package:dio/dio.dart';
 
 import 'models/api_helper_path_item.dart';
 import 'models/api_helper_request_type.dart';
-import 'models/custom_response.dart' as ResponseHelper;
+import 'package:api_caller/models/custom_response.dart' as response_helper;
+
 
 class ApiHelper {
   ApiHelper._();
@@ -14,7 +15,7 @@ class ApiHelper {
 
   final Map<String, ApiHelperPathItem> _paths = {};
 
-  ResponseHelper.Response Function(dynamic)? responseResolver;
+  response_helper.Response Function(dynamic)? responseResolver;
 
   // ==========================
   // INIT
@@ -23,7 +24,7 @@ class ApiHelper {
     required String baseUrl,
     String? token,
     List<ApiHelperPathItem>? paths,
-    ResponseHelper.Response Function(dynamic)? resolver,
+    response_helper.Response Function(dynamic)? resolver,
     int timeout = 30000,
   }) {
     _baseUrl = baseUrl;
@@ -95,7 +96,7 @@ class ApiHelper {
   // ==========================
   // CORE REQUEST
   // ==========================
-  Future<ResponseHelper.Response> request(
+  Future<response_helper.Response> request(
     ApiHelperPathItem item, {
     String? token,
     String? contentType,
@@ -156,25 +157,25 @@ class ApiHelper {
       if (response.statusCode == null ||
           response.statusCode! < 200 ||
           response.statusCode! >= 300) {
-        return ResponseHelper.Response.error(
+        return response_helper.Response.error(
           "Status Code: ${response.statusCode}",
         );
       }
 
       return responseResolver != null
           ? responseResolver!(response.data)
-          : ResponseHelper.Response.success(response.data);
+          : response_helper.Response.success(response.data);
     } on DioException catch (e) {
-      return ResponseHelper.Response.error(e.message ?? "Dio error");
+      return response_helper.Response.error(e.message ?? "Dio error");
     } catch (e) {
-      return ResponseHelper.Response.error(e.toString());
+      return response_helper.Response.error(e.toString());
     }
   }
 
   // ==========================
   // SHORTCUT METHODS
   // ==========================
-  Future<ResponseHelper.Response> get(
+  Future<response_helper.Response> get(
     String key, {
     Map<String, dynamic>? query,
     String? token,
@@ -184,7 +185,7 @@ class ApiHelper {
     return request(item, token: token);
   }
 
-  Future<ResponseHelper.Response> post(
+  Future<response_helper.Response> post(
     String key, {
     dynamic data,
     String? token,
