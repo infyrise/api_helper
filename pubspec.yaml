@@ -14,12 +14,20 @@ environment:
 
 dependencies:
   dio: ^5.9.0
-  custom_response: ^1.0.3
 
 dev_dependencies:
   test: ^1.28.0
   mockito: ^5.5.0
   build_runner: ^2.4.0
+platforms:
+  android:
+  ios:
+  web:
+  linux:
+  macos:
+  windows:
+
+
 
 topics:
   - api
