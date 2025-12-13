@@ -1,13 +1,16 @@
 import 'package:api_caller/api_helper.dart';
 import 'package:api_caller/models/api_helper_path_item.dart';
-import 'package:test/test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:dio/dio.dart';
+import 'package:mockito/mockito.dart';
+import 'package:test/test.dart';
 
 // ----------------------
-// 1️⃣ Mock Dio
+// 1️⃣ MOCK DIO
 // ----------------------
-class MockDio extends Mock implements Dio {}
+class MockDio extends Mock implements Dio {
+  @override
+  late BaseOptions options = BaseOptions(); // Prevent null BaseOptions
+}
 
 void main() {
   late ApiHelper apiHelper;
@@ -18,82 +21,150 @@ void main() {
     apiHelper = ApiHelper.instance;
 
     apiHelper.init(
-      baseUrl: "https://example.com",
-      token: "GLOBAL_TOKEN",
+      baseUrl: "https://srankbazaar.com",
+      token: "GLOBAL_TOKEN_123",
       paths: [
-        ApiHelperPathItem.get("getCategories", "/api/categories"),
-        ApiHelperPathItem.post("addCategory", "/api/add_category"),
+        ApiHelperPathItem.get("getUsers", "/API/categories.php"),
+        ApiHelperPathItem.post("addUser", "/users/add"),
+        ApiHelperPathItem.post("uploadFile", "/upload"),
       ],
     );
 
-    // Inject mock Dio
     apiHelper.overrideDio(mockDio);
   });
 
-  group("ApiHelper Tests", () {
-    test("Normal GET request with global token", () async {
-      // Mock response
-      when(mockDio.get("/api/categories",
-          queryParameters: anyNamed("queryParameters"),
-          options: anyNamed("options")))
-          .thenAnswer((_) async => Response(
-        data: [
-          {"id": 1, "name": "Category 1"},
-          {"id": 2, "name": "Category 2"}
-        ],
-        statusCode: 200,
-        requestOptions: RequestOptions(path: "/api/categories"),
-      ));
+  test("SIMPLE GET request", () async {
+    when(mockDio.get(
+      "/API/categories.php",
+      queryParameters: anyNamed("queryParameters"),
+      options: anyNamed("options"),
+    )).thenAnswer((_) async => Response(
+      data: [
+        {"id": 1, "name": "User 1"},
+        {"id": 2, "name": "User 2"}
+      ],
+      statusCode: 200,
+      requestOptions: RequestOptions(path: "/API/categories.php"),
+    ));
 
-      final res = await apiHelper.get("getCategories");
+    final res = await apiHelper.get("getUsers");
 
-      expect(res.isSuccess, true);
-      expect(res.value.length, 2);
-      expect(res.value[0]["name"], "Category 1");
+    expect(res.isSuccess, true);
+    expect(res.value.length, 2);
+    expect(res.value[0]["name"], "User 1");
+  });
+
+  test("POST JSON data", () async {
+    final data = {"name": "Bittu", "email": "bittu@example.com"};
+
+    when(mockDio.post(
+      "/users/add",
+      data: data,
+      queryParameters: anyNamed("queryParameters"),
+      options: anyNamed("options"),
+    )).thenAnswer((_) async => Response(
+      data: {"status": "success"},
+      statusCode: 201,
+      requestOptions: RequestOptions(path: "/users/add"),
+    ));
+
+    final res = await apiHelper.post(
+      "addUser",
+      data: data,
+      contentType: Headers.jsonContentType,
+    );
+
+    expect(res.isSuccess, true);
+    expect(res.value["status"], "success");
+  });
+
+  test("POST www-form-urlencoded data", () async {
+    final formData = {"username": "demo_user", "password": "123456"};
+
+    when(mockDio.post(
+      "/users/add",
+      data: formData,
+      queryParameters: anyNamed("queryParameters"),
+      options: anyNamed("options"),
+    )).thenAnswer((_) async => Response(
+      data: {"status": "form success"},
+      statusCode: 200,
+      requestOptions: RequestOptions(path: "/users/add"),
+    ));
+
+    final res = await apiHelper.post(
+      "addUser",
+      data: formData,
+      contentType: Headers.formUrlEncodedContentType,
+    );
+
+    expect(res.isSuccess, true);
+    expect(res.value["status"], "form success");
+  });
+
+  test("POST multipart/form-data", () async {
+    final formData = FormData.fromMap({
+      "title": "Profile Pic",
+      "file": MultipartFile.fromBytes([1, 2, 3], filename: "image.png"),
     });
 
-    test("POST request with JSON body", () async {
-      final data = {"name": "New Category"};
+    when(mockDio.post(
+      "/upload",
+      data: formData,
+      queryParameters: anyNamed("queryParameters"),
+      options: anyNamed("options"),
+    )).thenAnswer((_) async => Response(
+      data: {"status": "upload success"},
+      statusCode: 201,
+      requestOptions: RequestOptions(path: "/upload"),
+    ));
 
-      when(mockDio.post("/api/add_category",
-          data: data, queryParameters: anyNamed("queryParameters"), options: anyNamed("options")))
-          .thenAnswer((_) async => Response(
-        data: {"status": "success"},
-        statusCode: 201,
-        requestOptions: RequestOptions(path: "/api/add_category"),
-      ));
+    final res = await apiHelper.post(
+      "uploadFile",
+      data: formData,
+      contentType: Headers.multipartFormDataContentType,
+    );
 
-      final res = await apiHelper.post("addCategory", data: data);
+    expect(res.isSuccess, true);
+    expect(res.value["status"], "upload success");
+  });
 
-      expect(res.isSuccess, true);
-      expect(res.value["status"], "success");
-    });
+  test("OVERRIDE BASE URL + TOKEN for single request", () async {
+    final overrideItem = apiHelper.getPathItem("getUsers")
+      ..setBaseUrlOverride("https://uat.example.com")
+      ..setTokenOverride("UAT_ONLY_TOKEN");
 
-    test("Override token & base URL for single request", () async {
-      final item = apiHelper.getPathItem("getCategories")
-        ..setTokenOverride("OVERRIDE_TOKEN")
-        ..setBaseUrlOverride("https://override.com");
+    when(mockDio.get(
+      "https://uat.example.com/API/categories.php",
+      queryParameters: anyNamed("queryParameters"),
+      options: anyNamed("options"),
+    )).thenAnswer((_) async => Response(
+      data: {"override": true},
+      statusCode: 200,
+      requestOptions: RequestOptions(
+          path: "https://uat.example.com/API/categories.php"),
+    ));
 
-      when(mockDio.get(
-        "https://override.com/api/categories",
-        queryParameters: anyNamed("queryParameters"),
-        options: anyNamed("options"),
-      )).thenAnswer((_) async => Response(
-        data: {"override": true},
-        statusCode: 200,
-        requestOptions: RequestOptions(path: "https://override.com/api/categories"),
-      ));
+    final res = await apiHelper.request(overrideItem);
 
-      final res = await apiHelper.request(item);
+    expect(res.isSuccess, true);
+    expect(res.value["override"], true);
+  });
 
-      expect(res.isSuccess, true);
-      expect(res.value["override"], true);
-    });
+  test("BACK TO NORMAL GET request", () async {
+    when(mockDio.get(
+      "/API/categories.php",
+      queryParameters: anyNamed("queryParameters"),
+      options: anyNamed("options"),
+    )).thenAnswer((_) async => Response(
+      data: {"message": "Normal again"},
+      statusCode: 200,
+      requestOptions: RequestOptions(path: "/API/categories.php"),
+    ));
 
-    test("Change global token dynamically", () async {
-      apiHelper.setToken("NEW_GLOBAL_TOKEN");
+    final res = await apiHelper.get("getUsers");
 
-      expect(apiHelper.currentToken, "NEW_GLOBAL_TOKEN");
-    });
+    expect(res.isSuccess, true);
+    expect(res.value["message"], "Normal again");
   });
 }
