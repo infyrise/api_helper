@@ -1,4 +1,4 @@
-// api_helper_request_type.dart
+// api_caller_request_type.dart
 enum ApiHelperRequestType {
   get,
   post,

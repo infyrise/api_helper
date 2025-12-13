@@ -34,10 +34,10 @@ Centralized response handling
 
 📁 Structure
 lib/
-├─ api_helper.dart
+├─ api_caller.dart
 ├─ models/
-│   ├─ api_helper_path_item.dart
-│   └─ api_helper_request_type.dart
+│   ├─ api_caller_path_item.dart
+│   └─ api_caller_request_type.dart
 
 🔧 Initialization (ONE TIME)
 ApiHelper.instance.init(

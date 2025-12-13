@@ -1,5 +1,6 @@
-import 'package:api_helper/api_helper.dart';
-import 'package:api_helper/models/api_helper_path_item.dart';
+
+import 'package:api_caller/api_helper.dart';
+import 'package:api_caller/models/api_helper_path_item.dart';
 import 'package:dio/dio.dart';
 
 Future<void> main() async {
