@@ -4,7 +4,6 @@ import 'models/api_helper_path_item.dart';
 import 'models/api_helper_request_type.dart';
 import 'package:api_caller/models/custom_response.dart' as response_helper;
 
-
 class ApiHelper {
   ApiHelper._();
   static final ApiHelper instance = ApiHelper._();
