@@ -1,190 +1,193 @@
-import 'dart:async';
-import 'package:custom_response/custom_response.dart' as ResponseHelper;
 import 'package:dio/dio.dart';
-
+import 'package:custom_response/custom_response.dart' as ResponseHelper;
 import 'models/api_helper_path_item.dart';
 import 'models/api_helper_request_type.dart';
 
-/// Main API helper class
 class ApiHelper {
-  final Uri baseUrl;
-  final String token;
-  final List<ApiHelperPathItem> paths;
-  final ResponseHelper.Response Function(Map<String, dynamic>?)?
-      responseResolver;
+  ApiHelper._();
+  static final ApiHelper instance = ApiHelper._();
 
-  late Dio dio; // removed final to allow mock injection
+  late Dio _dio;
+  late String _baseUrl;
+  String? _token;
 
-  /// Constructor with optional Dio for testing
-  ApiHelper.setup(
-    this.baseUrl,
-    this.token,
-    this.paths, {
-    ResponseHelper.Response Function(Map<String, dynamic>?)?
-        responseResolverFunc,
+  final Map<String, ApiHelperPathItem> _paths = {};
+
+  ResponseHelper.Response Function(dynamic)? responseResolver;
+
+  // ==========================
+  // INIT
+  // ==========================
+  void init({
+    required String baseUrl,
+    String? token,
+    List<ApiHelperPathItem>? paths,
+    ResponseHelper.Response Function(dynamic)? resolver,
     int timeout = 30000,
-    Dio? dioInstance, // optional Dio for testing
-  }) : responseResolver = responseResolverFunc {
-    dio = dioInstance ??
-        Dio(
-          BaseOptions(
-            baseUrl: _getUriAsUrl(baseUrl),
-            headers: {"Authorization": "Bearer $token"},
-            connectTimeout: Duration(milliseconds: timeout),
-            sendTimeout: Duration(milliseconds: timeout),
-            receiveTimeout: Duration(milliseconds: timeout),
-          ),
-        );
-  }
+  }) {
+    _baseUrl = baseUrl;
+    _token = token;
+    responseResolver = resolver;
 
-  /// Convert Uri to full URL string
-  static String _getUriAsUrl(Uri uri) {
-    final path = uri.path.startsWith('/') ? uri.path : '/${uri.path}';
-    String url = "${uri.scheme}://${uri.host}";
-    if (uri.hasPort) url += ":${uri.port}";
-    return "$url$path";
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: _baseUrl,
+        connectTimeout: Duration(milliseconds: timeout),
+        sendTimeout: Duration(milliseconds: timeout),
+        receiveTimeout: Duration(milliseconds: timeout),
+      ),
+    );
+
+    _applyToken();
+
+    if (paths != null) {
+      for (final p in paths) {
+        _paths[p.key] = p;
+      }
+    }
   }
 
   // ==========================
-  //        REQUESTS
+  // GLOBAL TOKEN & BASE URL
   // ==========================
-  Future<ResponseHelper.Response> _sendRequestByType(
-      ApiHelperPathItem item) async {
+  void setToken(String? token) {
+    _token = token;
+    _applyToken();
+  }
+
+  void _applyToken() {
+    if (_token != null && _token!.isNotEmpty) {
+      _dio.options.headers["Authorization"] = "Bearer $_token";
+    } else {
+      _dio.options.headers.remove("Authorization");
+    }
+  }
+
+  void setBaseUrl(String url) {
+    _baseUrl = url;
+    _dio.options.baseUrl = _baseUrl;
+  }
+
+  // ==========================
+  // PATH MANAGEMENT
+  // ==========================
+  void addPath(ApiHelperPathItem item) {
+    _paths[item.key] = item;
+  }
+
+  ApiHelperPathItem getPathItem(String key) {
+    final item = _paths[key];
+    if (item == null) {
+      throw Exception("Path not found: $key");
+    }
+    return item.clone(); // 🔥 important
+  }
+
+  // ==========================
+  // CORE REQUEST
+  // ==========================
+  Future<ResponseHelper.Response> request(
+      ApiHelperPathItem item, {
+        String? token,
+        String? contentType,
+      }) async {
     try {
+      // ---------------- TOKEN PRIORITY
+      final finalToken = token ?? item.tokenOverride ?? _token;
+
+      final headers = <String, dynamic>{};
+
+      if (finalToken != null && finalToken.isNotEmpty) {
+        headers["Authorization"] = "Bearer $finalToken";
+      }
+
+      if (contentType != null) {
+        headers["Content-Type"] = contentType;
+      }
+
+      final options = headers.isNotEmpty ? Options(headers: headers) : null;
+
+      // ---------------- BASE URL OVERRIDE
+      final url = item.baseUrlOverride != null
+          ? "${item.baseUrlOverride}${item.path}"
+          : item.path;
+
       late Response response;
 
       switch (item.requestType) {
         case ApiHelperRequestType.get:
-          response =
-              await dio.get(item.path, queryParameters: item.queryParameters);
+          response = await _dio.get(url,
+              queryParameters: item.queryParameters, options: options);
           break;
+
         case ApiHelperRequestType.post:
-          response = await dio.post(item.path,
-              data: item.data, queryParameters: item.queryParameters);
+          response = await _dio.post(url,
+              data: item.data,
+              queryParameters: item.queryParameters,
+              options: options);
           break;
+
         case ApiHelperRequestType.put:
-          response = await dio.put(item.path,
-              data: item.data, queryParameters: item.queryParameters);
+          response = await _dio.put(url,
+              data: item.data,
+              queryParameters: item.queryParameters,
+              options: options);
           break;
+
         case ApiHelperRequestType.delete:
-          response = await dio.delete(item.path,
-              data: item.data, queryParameters: item.queryParameters);
+          response = await _dio.delete(url,
+              data: item.data,
+              queryParameters: item.queryParameters,
+              options: options);
           break;
+
         case ApiHelperRequestType.patch:
-          response = await dio.patch(item.path,
-              data: item.data, queryParameters: item.queryParameters);
+          response = await _dio.patch(url,
+              data: item.data,
+              queryParameters: item.queryParameters,
+              options: options);
           break;
-        case ApiHelperRequestType.head:
-          response =
-              await dio.head(item.path, queryParameters: item.queryParameters);
-          break;
-        case ApiHelperRequestType.options:
-          response = await dio.options(
-            item.path,
-            queryParameters: item.queryParameters,
-          );
-          break;
-        default:
-          throw Exception("Unsupported request type: ${item.requestType}");
       }
 
-      return _processResponse(response);
-    } on DioException catch (e) {
-      return _handleDioException(e);
-    } catch (e) {
-      return ResponseHelper.Response.error(e.toString());
-    }
-  }
-
-  ResponseHelper.Response _processResponse(Response response) {
-    if (response.statusCode == null ||
-        response.statusCode! < 200 ||
-        response.statusCode! >= 300) {
-      return ResponseHelper.Response.error(
-        "Status Code: ${response.statusCode}\n${response.statusMessage}",
-      );
-    }
-    return ResponseHelper.Response.success(response.data);
-  }
-
-  // ==========================
-  //       ERROR HANDLING
-  // ==========================
-  ResponseHelper.Response _handleDioException(DioException e) {
-    String error;
-
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-        error = "Connection timeout with API server";
-        break;
-      case DioExceptionType.sendTimeout:
-        error = "Send timeout with API server";
-        break;
-      case DioExceptionType.receiveTimeout:
-        error = "Receive timeout from API server";
-        break;
-      case DioExceptionType.badResponse:
+      if (response.statusCode == null ||
+          response.statusCode! < 200 ||
+          response.statusCode! >= 300) {
         return ResponseHelper.Response.error(
-          "Bad response: ${e.response?.statusCode}",
+          "Status Code: ${response.statusCode}",
         );
-      case DioExceptionType.cancel:
-        error = "Request was cancelled";
-        break;
-      case DioExceptionType.unknown:
-      default:
-        error = "Connection failed: ${e.message}";
-        break;
-    }
-
-    return ResponseHelper.Response.error(error);
-  }
-
-  // ==========================
-  //        PUBLIC API
-  // ==========================
-  ApiHelperPathItem getPathItem(String key) {
-    return paths.firstWhere(
-      (e) => e.key == key,
-      orElse: () => throw Exception("Path item not found: $key"),
-    );
-  }
-
-  Future<ResponseHelper.Response> _send(ApiHelperPathItem item) async =>
-      _sendRequestByType(item);
-
-  Future<ResponseHelper.Response> request(ApiHelperPathItem item) async {
-    try {
-      var response = await _send(item);
-
-      if (!response.isSuccess) return response;
-
-      if (responseResolver != null) {
-        response = responseResolver!(response.value);
       }
 
-      return response;
+      return responseResolver != null
+          ? responseResolver!(response.data)
+          : ResponseHelper.Response.success(response.data);
+    } on DioException catch (e) {
+      return ResponseHelper.Response.error(e.message ?? "Dio error");
     } catch (e) {
       return ResponseHelper.Response.error(e.toString());
     }
   }
 
-  Future<ResponseHelper.Response<T>> requestWithDataResolver<T>(
-    ApiHelperPathItem item, {
-    T Function(dynamic)? dataResolver,
-  }) async {
-    var response = await request(item);
+  // ==========================
+  // SHORTCUT METHODS
+  // ==========================
+  Future<ResponseHelper.Response> get(
+      String key, {
+        Map<String, dynamic>? query,
+        String? token,
+      }) {
+    final item = getPathItem(key);
+    if (query != null) item.setQueryParameters(query);
+    return request(item, token: token);
+  }
 
-    if (!response.isSuccess)
-      return ResponseHelper.Response.error(response.errorMessage);
-
-    if (dataResolver != null) {
-      try {
-        return ResponseHelper.Response.success(dataResolver(response.value));
-      } catch (e) {
-        return ResponseHelper.Response.error("Data resolution failed: $e");
-      }
-    }
-
-    return ResponseHelper.Response.success(response.value as T);
+  Future<ResponseHelper.Response> post(
+      String key, {
+        dynamic data,
+        String? token,
+        String? contentType,
+      }) {
+    final item = getPathItem(key);
+    if (data != null) item.setData(data);
+    return request(item, token: token, contentType: contentType);
   }
 }
